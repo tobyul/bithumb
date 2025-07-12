@@ -726,14 +726,20 @@
       const rate = parseFloat(value);
       return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
     };
+    // symbolCellRenderer에서 디버깅 추가
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const isFavorite = favoriteCoins.includes(symbol);
       const starIcon = isFavorite ? '★' : '☆';
       const starClass = isFavorite ? 'active' : 'inactive';
+      
+      // 디버깅 정보 추가
+      console.log(`심볼: ${symbol}, 마켓 정보:`, marketInfoMap[symbol]);
+      
       const marketInfo = marketInfoMap[symbol] || {};
       const koreanName = marketInfo.korean_name || symbol;
       const englishName = marketInfo.english_name || '';
+      
       return `
         <div class="symbol-cell">
           <span class="favorite-star ${starClass}" 
