@@ -332,20 +332,36 @@
     let marketInfoMap = {};
 
     // 2. 마켓 정보 불러오기
+    // 현재 loadMarketInfo 함수 수정
     async function loadMarketInfo() {
       try {
         const res = await fetch('https://api.bithumb.com/v1/market/all');
         const json = await res.json();
-        if (json.status !== '0000') return;
+        
+        // 응답 구조 확인을 위한 로그 추가
+        console.log('API 응답:', json);
+        
+        if (json.status !== '0000') {
+          console.error('API 오류:', json.message);
+          return;
+        }
+        
+        // 데이터 구조에 맞게 수정
         json.data.forEach(item => {
           if (!item.market) return;
+          
+          // 'KRW-BTC'에서 'BTC' 추출
           const symbol = item.market.split('-')[1];
+          
           marketInfoMap[symbol] = {
             korean_name: item.korean_name,
             english_name: item.english_name
           };
         });
+        
+        console.log('매핑된 마켓 정보:', marketInfoMap);
       } catch (e) {
+        console.error('마켓 정보 로드 실패:', e);
         marketInfoMap = {};
       }
     }
