@@ -726,19 +726,20 @@
       const rate = parseFloat(value);
       return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
     };
-    // symbolCellRenderer에서 디버깅 추가
+    
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const isFavorite = favoriteCoins.includes(symbol);
       const starIcon = isFavorite ? '★' : '☆';
       const starClass = isFavorite ? 'active' : 'inactive';
       
-      // 디버깅 정보 추가
-      console.log(`심볼: ${symbol}, 마켓 정보:`, marketInfoMap[symbol]);
-      
+      // 마켓 정보 가져오기
       const marketInfo = marketInfoMap[symbol] || {};
       const koreanName = marketInfo.korean_name || symbol;
       const englishName = marketInfo.english_name || '';
+      
+      // 디버깅용 로그 (필요시 주석 해제)
+      // console.log(`심볼: ${symbol}, 한글명: ${koreanName}, 영문명: ${englishName}`);
       
       return `
         <div class="symbol-cell">
@@ -756,6 +757,7 @@
         </div>
       `;
     };
+
     const scoreCellRenderer = (params) => {
       const score = params.value || 0;
       const grade = params.data.grade || 'D';
