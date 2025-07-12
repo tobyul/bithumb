@@ -9,7 +9,7 @@
   <style>
     body { background: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; }
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
       background: #fff;
       padding: 20px;
@@ -118,7 +118,6 @@
       'ORBS': '오브스',
       'VALOR': '밸러토큰',
       'CON': '코넌토큰',
-      'ANKR': '앵커',
       'BORA': '보라',
       'JST': '저스트',
       'CRO': '크로노스',
@@ -227,7 +226,7 @@
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const coinName = getCoinName(symbol);
-      return `<div style="font-weight: bold;">${symbol}</div><div class="coin-name">${coinName}</div>`;
+      return `<div style="font-weight: bold; font-size: 14px;">${symbol}</div><div class="coin-name">${coinName}</div>`;
     };
 
     // AG Grid 옵션
@@ -236,72 +235,85 @@
         { 
           field: 'symbol', 
           headerName: '암호화폐', 
-          width: 140, 
+          width: 160, 
           pinned: 'left',
           cellRenderer: symbolCellRenderer,
-          cellStyle: { padding: '8px' }
+          cellStyle: { padding: '10px' }
         },
         { 
           field: 'closing_price', 
           headerName: '현재가', 
-          width: 120, 
+          width: 150, 
           valueFormatter: params => formatPrice(params.value), 
-          cellStyle: { fontWeight: 'bold', color: '#007bff' }
+          cellStyle: { fontWeight: 'bold', color: '#007bff', textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'fluctate_rate_24H', 
           headerName: '24H 변동률', 
-          width: 120, 
+          width: 130, 
           valueFormatter: params => formatRate(params.value),
           cellStyle: params => ({
             color: parseFloat(params.value) > 0 ? '#dc3545' : parseFloat(params.value) < 0 ? '#007bff' : '#333',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            textAlign: 'right',
+            paddingRight: '10px'
           })
         },
         { 
           field: 'opening_price', 
           headerName: '시가', 
-          width: 120, 
-          valueFormatter: params => formatPrice(params.value) 
+          width: 150, 
+          valueFormatter: params => formatPrice(params.value),
+          cellStyle: { textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'min_price', 
           headerName: '최저가', 
-          width: 120, 
+          width: 150, 
           valueFormatter: params => formatPrice(params.value), 
-          cellStyle: { color: '#dc3545' } 
+          cellStyle: { color: '#dc3545', textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'max_price', 
           headerName: '최고가', 
-          width: 120, 
+          width: 150, 
           valueFormatter: params => formatPrice(params.value), 
-          cellStyle: { color: '#28a745' } 
+          cellStyle: { color: '#28a745', textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'units_traded', 
           headerName: '거래량', 
           width: 120, 
-          valueFormatter: params => formatVolume(params.value) 
+          valueFormatter: params => formatVolume(params.value),
+          cellStyle: { textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'acc_trade_value', 
           headerName: '거래대금', 
-          width: 140, 
-          valueFormatter: params => formatPrice(params.value) 
+          width: 170, 
+          valueFormatter: params => formatPrice(params.value),
+          cellStyle: { textAlign: 'right', paddingRight: '10px' }
         }
       ],
       defaultColDef: {
         sortable: true,
         filter: true,
         resizable: true,
-        minWidth: 100
+        minWidth: 100,
+        suppressSizeToFit: false // 컬럼 크기 자동 조정 허용
       },
       rowData: [],
-      rowHeight: 60, // 행 높이 증가로 심볼과 코인명 모두 표시
+      rowHeight: 60,
+      // 그리드 크기에 맞춰 컬럼 너비 자동 조정
       onGridReady: function(params) {
         gridApi = params.api;
         loadCryptoData();
+        // 그리드 사이즈에 맞춰 컬럼 너비 조정
+        params.api.sizeColumnsToFit();
+      },
+      // 창 크기 변경 시 컬럼 너비 재조정
+      onGridSizeChanged: function(params) {
+        params.api.sizeColumnsToFit();
       }
     };
 
@@ -336,6 +348,11 @@
 
         // AG Grid에 데이터 설정
         gridApi.setGridOption('rowData', cryptoData);
+        
+        // 데이터 로드 후 컬럼 너비 재조정
+        setTimeout(() => {
+          gridApi.sizeColumnsToFit();
+        }, 100);
         
         console.log(`${cryptoData.length}개의 암호화폐 데이터가 로드되었습니다.`);
 
@@ -402,6 +419,12 @@
         ];
         
         gridApi.setGridOption('rowData', sampleData);
+        
+        // 샘플 데이터 로드 후에도 컬럼 너비 재조정
+        setTimeout(() => {
+          gridApi.sizeColumnsToFit();
+        }, 100);
+        
         console.log('샘플 데이터를 사용합니다.');
       } finally {
         loadingDiv.style.display = 'none';
