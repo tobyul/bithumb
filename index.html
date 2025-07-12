@@ -440,6 +440,24 @@
       setupLoginForm();
     });
 
+    // 윈도우 크기 변경 시 그리드 크기 재조정
+    window.addEventListener('resize', function() {
+      if (gridApi) {
+        setTimeout(() => {
+          gridApi.sizeColumnsToFit();
+        }, 100);
+      }
+    });
+
+    // 화면 방향 변경 시에도 크기 재조정
+    window.addEventListener('orientationchange', function() {
+      if (gridApi) {
+        setTimeout(() => {
+          gridApi.sizeColumnsToFit();
+        }, 300);
+      }
+    });
+
     function checkLoginStatus() {
       const loginData = localStorage.getItem('cryptoTradingLogin');
       if (loginData) {
