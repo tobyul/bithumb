@@ -97,6 +97,7 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 800px;
     }
     .header {
       display: flex;
@@ -166,30 +167,8 @@
     #myGrid { 
       height: 600px; 
       width: 100%; 
-      min-height: 600px; /* 최소 높이 설정 */
-      transition: none; /* 전환 효과 제거 */
+      min-height: 600px;
     }
-
-    .main-container {
-      max-width: 2000px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      min-height: 800px; /* 최소 높이 설정 */
-    }
-
-    /* 화면 전환 시 깜빡임 방지 */
-    #mainScreen {
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out;
-    }
-
-    #mainScreen:not(.hidden) {
-      opacity: 1;
-    }
-
     .loading { text-align: center; color: #666; margin: 20px 0; }
     .favorite-star {
       cursor: pointer;
@@ -353,7 +332,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32/dist/ag-grid-community.min.js"></script>
   <script>
     // 1. 마켓 정보 저장용
     let marketInfoMap = {};
@@ -537,28 +516,21 @@
       };
       document.getElementById('userWelcome').textContent = welcomeMsg[currentUser] || `${currentUser}님, 환영합니다!`;
       
-      if (!gridApi) {
-        // 화면이 완전히 표시된 후 그리드 초기화
-        setTimeout(() => {
+      // 그리드 초기화 지연 처리
+      setTimeout(() => {
+        if (!gridApi) {
           const gridDiv = document.getElementById('myGrid');
           gridApi = agGrid.createGrid(gridDiv, gridOptions);
           document.getElementById('allCoinsBtn').classList.add('active');
-          
-          // 그리드 크기 재조정
-          setTimeout(() => {
-            if (gridApi) {
-              gridApi.sizeColumnsToFit();
-            }
-          }, 100);
-        }, 50);
-      } else {
-        // 기존 그리드가 있다면 크기 재조정
+        }
+        
+        // 추가 지연 후 크기 조정
         setTimeout(() => {
           if (gridApi) {
             gridApi.sizeColumnsToFit();
           }
-        }, 50);
-      }
+        }, 200);
+      }, 100);
     }
 
     function showError(message) {
@@ -863,11 +835,6 @@
       const koreanName = marketInfo.korean_name || symbol;
       const englishName = marketInfo.english_name || '';
       
-      // 디버깅용 로그 (처음 몇 개만)
-      if (Object.keys(marketInfoMap).length > 0 && Math.random() < 0.1) {
-        console.log(`심볼: ${symbol}, 한글명: ${koreanName}, 영문명: ${englishName}`);
-      }
-      
       return `
         <div class="symbol-cell">
           <span class="favorite-star ${starClass}" 
@@ -877,8 +844,7 @@
             ${starIcon}
           </span>
           <div class="symbol-info">
-            <div style="font-weight: bold; font-size: 14px;">${symbol}</div>
-            <div class="coin-name">${koreanName}</div>
+            <div style="font-weight: bold; font-size: 14px;">${symbol} ${koreanName}</div>
             <div class="coin-en-name">${englishName}</div>
           </div>
         </div>
@@ -898,6 +864,7 @@
         </div>
       `;
     };
+
     const targetPriceCellRenderer = (params) => {
       const currentPrice = parseFloat(params.data.closing_price);
       const score = params.data.investmentScore || 0;
@@ -913,6 +880,7 @@
         </div>
       `;
     };
+
     const stopLossCellRenderer = (params) => {
       const currentPrice = parseFloat(params.data.closing_price);
       const score = params.data.investmentScore || 0;
@@ -928,8 +896,8 @@
         </div>
       `;
     };
+
     const gridOptions = {
-      theme: 'legacy',
       columnDefs: [
         { 
           field: 'symbol', 
@@ -1054,7 +1022,7 @@
         // 초기 크기 조정을 지연 실행
         setTimeout(() => {
           params.api.sizeColumnsToFit();
-        }, 200);
+        }, 300);
       },
       
       onGridSizeChanged: function(params) {
