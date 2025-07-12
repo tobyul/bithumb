@@ -53,13 +53,26 @@
     .coin-name { font-size: 12px; color: #666; }
     .favorite-star {
       cursor: pointer;
-      font-size: 18px;
-      color: #ccc;
+      font-size: 20px;
       margin-right: 8px;
-      transition: color 0.2s;
+      transition: all 0.2s ease;
+      user-select: none;
+      display: inline-block;
     }
-    .favorite-star.active { color: #ffc107; }
-    .favorite-star:hover { color: #ffc107; }
+    .favorite-star.inactive {
+      color: #ddd;
+      text-shadow: 0 0 1px #999;
+    }
+    .favorite-star.active {
+      color: #ffc107;
+      text-shadow: 0 0 3px rgba(255, 193, 7, 0.5);
+      transform: scale(1.1);
+    }
+    .favorite-star:hover {
+      color: #ffc107;
+      text-shadow: 0 0 3px rgba(255, 193, 7, 0.8);
+      transform: scale(1.2);
+    }
     .symbol-cell {
       display: flex;
       align-items: center;
@@ -73,6 +86,14 @@
       color: #666;
       font-size: 12px;
       margin-top: 10px;
+    }
+    /* 관심 코인 행 하이라이트 */
+    .ag-row.favorite-row {
+      background-color: #fffbf0 !important;
+      border-left: 3px solid #ffc107 !important;
+    }
+    .ag-row.favorite-row:hover {
+      background-color: #fff8e1 !important;
     }
   </style>
 </head>
@@ -118,8 +139,6 @@
 
     // 1초마다 시간 업데이트
     setInterval(updateDateTime, 1000);
-
-    // 페이지 로드 시 초기 시간 표시
     updateDateTime();
 
     // 암호화폐 심볼과 한국어 이름 매핑
@@ -282,12 +301,12 @@
       }
       localStorage.setItem('favoriteCoins', JSON.stringify(favoriteCoins));
       
-      // 현재 관심 코인 필터가 활성화되어 있다면 그리드 업데이트
+      // 그리드 새로고침 (별표 색상 업데이트)
+      gridApi.refreshCells();
+      
+      // 현재 관심 코인 필터가 활성화되어 있다면 그리드 데이터 업데이트
       if (currentFilter === 'favorites') {
         applyFilter();
-      } else {
-        // 전체 보기에서도 별표 상태 업데이트
-        gridApi.refreshCells();
       }
     }
 
@@ -365,9 +384,13 @@
       const coinName = getCoinName(symbol);
       const isFavorite = favoriteCoins.includes(symbol);
       
+      // 별표 아이콘 선택: 관심 코인은 채워진 별, 아니면 빈 별
+      const starIcon = isFavorite ? '★' : '☆';
+      const starClass = isFavorite ? 'active' : 'inactive';
+      
       return `
         <div class="symbol-cell">
-          <span class="favorite-star ${isFavorite ? 'active' : ''}" onclick="toggleFavorite('${symbol}')">⭐</span>
+          <span class="favorite-star ${starClass}" onclick="toggleFavorite('${symbol}')">${starIcon}</span>
           <div class="symbol-info">
             <div style="font-weight: bold; font-size: 14px;">${symbol}</div>
             <div class="coin-name">${coinName}</div>
@@ -451,6 +474,10 @@
       },
       rowData: [],
       rowHeight: 60,
+      // 관심 코인 행에 특별한 스타일 적용
+      getRowClass: (params) => {
+        return favoriteCoins.includes(params.data.symbol) ? 'favorite-row' : '';
+      },
       onGridReady: function(params) {
         gridApi = params.api;
         loadCryptoData();
@@ -493,7 +520,7 @@
         applyFilter();
         
         console.log(`${allCryptoData.length}개의 암호화폐 데이터가 로드되었습니다.`);
-        updateDateTime(); // 데이터 로드 후 시간 업데이트
+        updateDateTime();
 
       } catch (error) {
         console.error('데이터 로드 오류:', error);
@@ -546,7 +573,7 @@
           },
           {
             symbol: 'DOT',
-            coinName: '폴카닷',
+            columnName: '폴카닷',
             opening_price: '8500',
             closing_price: '8450',
             min_price: '8400',
