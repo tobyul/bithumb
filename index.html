@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>빗썸 시세 AG Grid (최신버전)</title>
-  <!-- AG Grid Alpine 테마 CSS (legacy fallback용) -->
+  <title>빗썸 시세 AG Grid (Legacy 테마)</title>
+  <!-- AG Grid CSS 파일들 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
   <style>
     body { background: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -39,18 +40,12 @@
     <h1>🪙 빗썸 암호화폐 실시간 시세</h1>
     <button class="refresh-btn" onclick="loadCryptoData()">🔄 데이터 새로고침</button>
     <div id="loading" class="loading" style="display: none;">데이터를 불러오는 중...</div>
-    <div id="myGrid"></div>
+    <div id="myGrid" class="ag-theme-alpine"></div>
   </div>
 
-  <!-- AG Grid CDN (Theming API 지원) -->
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
   <script>
-    // 1. Alpine 테마 객체를 Theming API로 생성
-    const { createTheme, themes } = agGrid;
-    // createTheme을 사용하여 테마 객체를 생성
-    const alpineTheme = createTheme(themes.alpine);
-
-    // 2. 가격/거래량/변동률 포맷 함수
+    // 가격/거래량/변동률 포맷 함수
     function formatPrice(value) {
       if (!value || value === '0') return '0';
       return parseFloat(value).toLocaleString('ko-KR') + ' 원';
@@ -69,7 +64,7 @@
       return sign + rate.toFixed(2) + '%';
     }
 
-    // 3. AG Grid 옵션 (최신 방식)
+    // AG Grid 옵션 (Legacy 테마 사용)
     const gridOptions = {
       columnDefs: [
         { field: 'symbol', headerName: '심볼', width: 110, pinned: 'left', cellStyle: {fontWeight:'bold'} },
@@ -109,14 +104,14 @@
       paginationPageSize: 20,
       // 최신 rowSelection 옵션
       rowSelection: {
-        mode: 'singleRow', // 또는 'multiRow'
+        mode: 'singleRow',
         enableClickSelection: true
       },
-      // Theming API 객체를 theme에 할당
-      theme: alpineTheme
+      // Legacy 테마 사용
+      theme: 'legacy'
     };
 
-    // 4. 빗썸 API에서 데이터 받아오기
+    // 빗썸 API에서 데이터 받아오기
     async function loadCryptoData() {
       const loadingDiv = document.getElementById('loading');
       loadingDiv.style.display = 'block';
@@ -149,7 +144,6 @@
         });
         cryptoData.sort((a, b) => parseFloat(b.closing_price) - parseFloat(a.closing_price));
 
-        // gridOptions.api가 정의된 후에만 setRowData 사용
         if (gridOptions.api) {
           gridOptions.api.setRowData(cryptoData);
         }
@@ -161,12 +155,12 @@
       }
     }
 
-    // 5. 페이지 로드 시 AG Grid 초기화 및 데이터 로드
+    // 페이지 로드 시 AG Grid 초기화 및 데이터 로드
     document.addEventListener('DOMContentLoaded', function() {
       const gridDiv = document.getElementById('myGrid');
       agGrid.createGrid(gridDiv, gridOptions);
       loadCryptoData();
-      setInterval(loadCryptoData, 30000); // 30초마다 자동 새로고침
+      setInterval(loadCryptoData, 30000);
     });
   </script>
 </body>
