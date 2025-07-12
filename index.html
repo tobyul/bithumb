@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>빗썸 시세 AG Grid (Legacy 테마)</title>
-  <!-- AG Grid CSS 파일들 -->
+  <title>빗썸 시세 AG Grid (수정버전)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
   <style>
@@ -45,7 +44,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
   <script>
-    // 가격/거래량/변동률 포맷 함수
+    // 전역 변수로 gridApi 저장
+    let gridApi;
+
+    // 포맷팅 함수들
     function formatPrice(value) {
       if (!value || value === '0') return '0';
       return parseFloat(value).toLocaleString('ko-KR') + ' 원';
@@ -64,7 +66,7 @@
       return sign + rate.toFixed(2) + '%';
     }
 
-    // AG Grid 옵션 (Legacy 테마 사용)
+    // AG Grid 옵션
     const gridOptions = {
       columnDefs: [
         { field: 'symbol', headerName: '심볼', width: 110, pinned: 'left', cellStyle: {fontWeight:'bold'} },
@@ -73,17 +75,6 @@
         { field: 'min_price', headerName: '최저가', width: 110, valueFormatter: params => formatPrice(params.value), cellStyle: {color:'#dc3545'} },
         { field: 'max_price', headerName: '최고가', width: 110, valueFormatter: params => formatPrice(params.value), cellStyle: {color:'#28a745'} },
         { field: 'units_traded', headerName: '거래량', width: 130, valueFormatter: params => formatVolume(params.value) },
-        { field: 'acc_trade_value', headerName: '거래대금', width: 130, valueFormatter: params => formatPrice(params.value) },
-        { field: 'prev_closing_price', headerName: '전일종가', width: 110, valueFormatter: params => formatPrice(params.value) },
-        { field: 'units_traded_24H', headerName: '24H 거래량', width: 130, valueFormatter: params => formatVolume(params.value) },
-        { field: 'acc_trade_value_24H', headerName: '24H 거래대금', width: 130, valueFormatter: params => formatPrice(params.value) },
-        { field: 'fluctate_24H', headerName: '24H 변동가', width: 110, valueFormatter: params => formatPrice(params.value),
-          cellStyle: params => {
-            if (parseFloat(params.value) > 0) return {color:'#dc3545'};
-            if (parseFloat(params.value) < 0) return {color:'#007bff'};
-            return {color:'#333'};
-          }
-        },
         { field: 'fluctate_rate_24H', headerName: '24H 변동률', width: 110, valueFormatter: params => formatRate(params.value),
           cellStyle: params => {
             if (parseFloat(params.value) > 0) return {color:'#dc3545', fontWeight:'bold'};
@@ -102,16 +93,20 @@
       animateRows: true,
       pagination: true,
       paginationPageSize: 20,
-      // 최신 rowSelection 옵션
       rowSelection: {
         mode: 'singleRow',
         enableClickSelection: true
       },
-      // Legacy 테마 사용
-      theme: 'legacy'
+      theme: 'legacy',
+      // 그리드 준비 완료 시 호출
+      onGridReady: function(params) {
+        gridApi = params.api;
+        console.log('AG Grid가 준비되었습니다.');
+        loadCryptoData(); // 그리드 준비 후 데이터 로드
+      }
     };
 
-    // 빗썸 API에서 데이터 받아오기
+    // 데이터 로드 함수
     async function loadCryptoData() {
       const loadingDiv = document.getElementById('loading');
       loadingDiv.style.display = 'block';
@@ -122,10 +117,11 @@
         const data = await response.json();
         if (data.status !== '0000') throw new Error('API 응답 오류: ' + data.message);
 
+
         const cryptoData = [];
-        Object.keys(data.data).forEach(symbol => {
+        Object.keys(sampleData.data).forEach(symbol => {
           if (symbol !== 'date') {
-            const coinData = data.data[symbol];
+            const coinData = sampleData.data[symbol];
             cryptoData.push({
               symbol: symbol,
               opening_price: coinData.opening_price,
@@ -133,34 +129,33 @@
               min_price: coinData.min_price,
               max_price: coinData.max_price,
               units_traded: coinData.units_traded,
-              acc_trade_value: coinData.acc_trade_value,
-              prev_closing_price: coinData.prev_closing_price,
-              units_traded_24H: coinData.units_traded_24H,
-              acc_trade_value_24H: coinData.acc_trade_value_24H,
-              fluctate_24H: coinData.fluctate_24H,
               fluctate_rate_24H: coinData.fluctate_rate_24H
             });
           }
         });
-        cryptoData.sort((a, b) => parseFloat(b.closing_price) - parseFloat(a.closing_price));
 
-        if (gridOptions.api) {
-          gridOptions.api.setRowData(cryptoData);
+        console.log('변환된 데이터:', cryptoData);
+
+        // gridApi가 존재하는지 확인 후 데이터 설정
+        if (gridApi) {
+          gridApi.setRowData(cryptoData);
+          console.log('데이터가 그리드에 설정되었습니다.');
+        } else {
+          console.error('gridApi가 아직 초기화되지 않았습니다.');
         }
+
       } catch (error) {
+        console.error('데이터 로드 중 오류 발생:', error);
         alert('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
-        if (gridOptions.api) gridOptions.api.setRowData([]);
       } finally {
         loadingDiv.style.display = 'none';
       }
     }
 
-    // 페이지 로드 시 AG Grid 초기화 및 데이터 로드
+    // 페이지 로드 시 AG Grid 초기화
     document.addEventListener('DOMContentLoaded', function() {
       const gridDiv = document.getElementById('myGrid');
       agGrid.createGrid(gridDiv, gridOptions);
-      loadCryptoData();
-      setInterval(loadCryptoData, 30000);
     });
   </script>
 </body>
