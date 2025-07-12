@@ -375,7 +375,9 @@
     let favoriteCoins = JSON.parse(localStorage.getItem('favoriteCoins')) || [];
 
     document.addEventListener('DOMContentLoaded', async function() {
+      console.log('페이지 로딩 시작');
       await loadMarketInfo();
+      console.log('마켓 정보 로딩 완료');
       checkLoginStatus();
       setupLoginForm();
     });
@@ -726,7 +728,7 @@
       const rate = parseFloat(value);
       return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
     };
-    
+
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const isFavorite = favoriteCoins.includes(symbol);
