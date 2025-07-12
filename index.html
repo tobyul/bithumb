@@ -371,19 +371,6 @@
         
         <div id="errorMessage" class="error-message hidden"></div>
       </form>
-      
-      <div class="demo-accounts">
-        <h4>📋 테스트 계정</h4>
-        <div class="demo-account" onclick="fillLogin('admin', 'admin123')">
-          👑 관리자: admin / admin123
-        </div>
-        <div class="demo-account" onclick="fillLogin('user', 'user123')">
-          👤 사용자: user / user123
-        </div>
-        <div class="demo-account" onclick="fillLogin('investor', 'invest123')">
-          💰 투자자: investor / invest123
-        </div>
-      </div>
     </div>
   </div>
 
@@ -417,9 +404,8 @@
   <script>
     // 로그인 관련 변수
     const validUsers = {
-      'admin': 'admin123',
-      'user': 'user123',
-      'investor': 'invest123'
+      'reib': 'reibyeon',
+      'user': 'friends'
     };
     
     let currentUser = null;
