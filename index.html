@@ -121,7 +121,7 @@
         const cryptoData = [];
         Object.keys(data).forEach(symbol => {
           if (symbol !== 'date') {
-            const coinData = sampleData.data[symbol];
+            const coinData = data[symbol];
             cryptoData.push({
               symbol: symbol,
               opening_price: coinData.opening_price,
