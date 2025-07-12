@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Rei's 빗썸 시세 - 스마트 매매</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32/styles/ag-grid.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32/styles/ag-theme-alpine.css" />
+
   <style>
     body { background: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; }
     .coin-name { font-size: 12px; color: #666; }
@@ -332,38 +333,69 @@
     let marketInfoMap = {};
 
     // 2. 마켓 정보 불러오기
-    // 현재 loadMarketInfo 함수 수정
     async function loadMarketInfo() {
       try {
         const res = await fetch('https://api.bithumb.com/v1/market/all');
         const json = await res.json();
         
-        // 응답 구조 확인을 위한 로그 추가
         console.log('API 응답:', json);
         
-        if (json.status !== '0000') {
-          console.error('API 오류:', json.message);
-          return;
+        // 배열 형태의 응답 처리
+        if (Array.isArray(json)) {
+          json.forEach(item => {
+            if (!item.market) return;
+            
+            // 'KRW-BTC'에서 'BTC' 추출
+            const symbol = item.market.split('-')[1];
+            
+            marketInfoMap[symbol] = {
+              korean_name: item.korean_name,
+              english_name: item.english_name
+            };
+          });
+          
+          console.log('매핑된 마켓 정보:', marketInfoMap);
+        } else {
+          console.error('예상과 다른 API 응답 구조:', json);
+          // 기본값 설정
+          setDefaultMarketInfo();
         }
         
-        // 데이터 구조에 맞게 수정
-        json.data.forEach(item => {
-          if (!item.market) return;
-          
-          // 'KRW-BTC'에서 'BTC' 추출
-          const symbol = item.market.split('-')[1];
-          
-          marketInfoMap[symbol] = {
-            korean_name: item.korean_name,
-            english_name: item.english_name
-          };
-        });
-        
-        console.log('매핑된 마켓 정보:', marketInfoMap);
       } catch (e) {
         console.error('마켓 정보 로드 실패:', e);
-        marketInfoMap = {};
+        setDefaultMarketInfo();
       }
+    }
+
+    // 기본 마켓 정보 설정 함수
+    function setDefaultMarketInfo() {
+      marketInfoMap = {
+        'BTC': { korean_name: '비트코인', english_name: 'Bitcoin' },
+        'ETH': { korean_name: '이더리움', english_name: 'Ethereum' },
+        'XRP': { korean_name: '엑스알피', english_name: 'XRP' },
+        'BCH': { korean_name: '비트코인 캐시', english_name: 'Bitcoin Cash' },
+        'ETC': { korean_name: '이더리움 클래식', english_name: 'Ethereum Classic' },
+        'QTUM': { korean_name: '퀀텀', english_name: 'Qtum' },
+        'A': { korean_name: '볼타', english_name: 'Vaulta' },
+        'ICX': { korean_name: '아이콘', english_name: 'ICON' },
+        'TRX': { korean_name: '트론', english_name: 'TRON' },
+        'ELF': { korean_name: '엘프', english_name: 'aelf' },
+        'KNC': { korean_name: '카이버 네트워크', english_name: 'Kyber Network' },
+        'GLM': { korean_name: '골렘', english_name: 'Golem' },
+        'ZIL': { korean_name: '질리카', english_name: 'Zilliqa' },
+        'WAXP': { korean_name: '왁스', english_name: 'WAXP' },
+        'POWR': { korean_name: '파워렛저', english_name: 'Powerledger' },
+        'LRC': { korean_name: '루프링', english_name: 'Loopring' },
+        'STEEM': { korean_name: '스팀', english_name: 'Steem' },
+        'ZRX': { korean_name: '제로엑스', english_name: '0x' },
+        'SNT': { korean_name: '스테이터스네트워크토큰', english_name: 'Status Network' },
+        'ADA': { korean_name: '에이다', english_name: 'Cardano' },
+        'LINK': { korean_name: '체인링크', english_name: 'ChainLink' },
+        'UNI': { korean_name: '유니스왑', english_name: 'Uniswap' },
+        'SAND': { korean_name: '샌드박스', english_name: 'The Sandbox' },
+        'MANA': { korean_name: '디센트럴랜드', english_name: 'Decentraland' },
+        'SUSHI': { korean_name: '스시스왑', english_name: 'Sushiswap' }
+      };
     }
 
     const validUsers = { 'reib': 'reibyeon', 'user': 'friends' };
@@ -402,6 +434,7 @@
       }
       showLoginScreen();
     }
+
     function setupLoginForm() {
       const loginForm = document.getElementById('loginForm');
       loginForm.addEventListener('submit', function(e) {
@@ -415,6 +448,7 @@
         if (e.key === 'Enter') attemptLogin();
       });
     }
+
     function attemptLogin() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
@@ -435,17 +469,20 @@
         document.getElementById('password').focus();
       }
     }
+
     function logout() {
       localStorage.removeItem('cryptoTradingLogin');
       currentUser = null;
       showLoginScreen();
       showToast('로그아웃되었습니다.');
     }
+
     function showLoginScreen() {
       document.getElementById('loginScreen').classList.remove('hidden');
       document.getElementById('mainScreen').classList.add('hidden');
       document.getElementById('username').focus();
     }
+
     function showMainScreen() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainScreen').classList.remove('hidden');
@@ -460,15 +497,18 @@
         document.getElementById('allCoinsBtn').classList.add('active');
       }
     }
+
     function showError(message) {
       const errorDiv = document.getElementById('errorMessage');
       errorDiv.textContent = message;
       errorDiv.classList.remove('hidden');
     }
+
     function hideError() {
       const errorDiv = document.getElementById('errorMessage');
       errorDiv.classList.add('hidden');
     }
+
     function showToast(message) {
       const existingToast = document.querySelector('.toast');
       if (existingToast) existingToast.remove();
@@ -478,6 +518,7 @@
       document.body.appendChild(toast);
       setTimeout(() => { toast.remove(); }, 3000);
     }
+
     let activityTimer;
     function resetActivityTimer() {
       clearTimeout(activityTimer);
@@ -515,16 +556,19 @@
       if (score >= 50) return { profitRate: 3, stopLoss: 2, tradable: true };
       return { profitRate: 0, stopLoss: 0, tradable: false };
     }
+
     function calculateTargetPrice(currentPrice, score) {
       const params = getTradingParams(score);
       if (!params.tradable) return null;
       return Math.round(currentPrice * (1 + params.profitRate / 100));
     }
+
     function calculateStopLoss(currentPrice, score) {
       const params = getTradingParams(score);
       if (!params.tradable) return null;
       return Math.round(currentPrice * (1 - params.stopLoss / 100));
     }
+
     function calculatePricePosition(data) {
       const current = parseFloat(data.closing_price);
       const min = parseFloat(data.min_price);
@@ -536,6 +580,7 @@
       if (position >= 0.1 && position <= 0.9) return 5;
       return 0;
     }
+
     function calculateVolatility(data) {
       const min = parseFloat(data.min_price);
       const max = parseFloat(data.max_price);
@@ -547,6 +592,7 @@
       if (volatility >= 0.5 && volatility <= 15) return 4;
       return 0;
     }
+
     function calculateMomentum(data) {
       const rate24h = parseFloat(data.fluctate_rate_24H);
       const current = parseFloat(data.closing_price);
@@ -559,6 +605,7 @@
       if (rate24h > -5 && rate24h <= -2) return 3;
       return 0;
     }
+
     function calculateVolumeHealth(data) {
       const volume = parseFloat(data.units_traded);
       const value = parseFloat(data.acc_trade_value);
@@ -572,6 +619,7 @@
       if (priceDeviation <= 0.05) return 5;
       return 0;
     }
+
     function calculateVolumeGrowth(data) {
       const volume = parseFloat(data.units_traded);
       const volume24h = parseFloat(data.units_traded_24H);
@@ -581,6 +629,7 @@
       if (volume24h > volume * 1.05) return 4;
       return 0;
     }
+
     function calculateStability(data) {
       const current = parseFloat(data.closing_price);
       const prev = parseFloat(data.prev_closing_price);
@@ -591,6 +640,7 @@
       if (change <= 15) return 2;
       return 0;
     }
+
     function calculateSupportLevel(data) {
       const current = parseFloat(data.closing_price);
       const min = parseFloat(data.min_price);
@@ -602,6 +652,7 @@
       if (distanceFromMin >= 0.4 && distanceFromMin <= 0.6) return 4;
       return 0;
     }
+
     function calculateMarketPosition(allCoins, currentCoin) {
       const values = allCoins.map(coin => parseFloat(coin.acc_trade_value));
       values.sort((a, b) => b - a);
@@ -614,6 +665,7 @@
       if (percentile >= 0.3) return 4;
       return 0;
     }
+
     function calculateInvestmentScore(coinData, allCoinsData) {
       const pricePosition = calculatePricePosition(coinData);
       const volatility = calculateVolatility(coinData);
@@ -637,6 +689,7 @@
         }
       };
     }
+
     function getGrade(score) {
       if (score >= 80) return 'A+';
       if (score >= 70) return 'A';
@@ -645,6 +698,7 @@
       if (score >= 40) return 'C';
       return 'D';
     }
+
     function getRecommendation(score) {
       if (score >= 75) return '강력 매수';
       if (score >= 65) return '매수';
@@ -652,6 +706,7 @@
       if (score >= 45) return '관망';
       return '매도 고려';
     }
+
     function toggleFavorite(symbol) {
       const index = favoriteCoins.indexOf(symbol);
       const wasRemoved = index > -1;
@@ -671,6 +726,7 @@
         : `${coinName}(${symbol})이 관심 코인에 추가되었습니다.`;
       showToast(message);
     }
+
     function toggleFilter(filterType) {
       currentFilter = filterType;
       document.getElementById('allCoinsBtn').classList.toggle('active', filterType === 'all');
@@ -678,6 +734,7 @@
       document.getElementById('recommendedBtn').classList.toggle('active', filterType === 'recommended');
       applyFilter();
     }
+
     function applyFilter() {
       let filteredData = allCryptoData;
       if (currentFilter === 'favorites') {
@@ -695,6 +752,7 @@
         }, 100);
       }
     }
+
     function updateCoinCount(count) {
       const totalCount = allCryptoData.length;
       const favoriteCount = favoriteCoins.length;
@@ -712,10 +770,12 @@
         countElement.textContent = countText;
       }
     }
+
     const formatPrice = (value) => {
       if (!value || value === '0') return '0';
       return parseFloat(value).toLocaleString('ko-KR') + ' 원';
     };
+
     const formatVolume = (value) => {
       if (!value || value === '0') return '0';
       const num = parseFloat(value);
@@ -723,6 +783,7 @@
       if (num >= 1000) return (num/1000).toFixed(2) + 'K';
       return num.toFixed(4);
     };
+
     const formatRate = (value) => {
       if (!value || value === '0') return '0.00%';
       const rate = parseFloat(value);
@@ -735,13 +796,14 @@
       const starIcon = isFavorite ? '★' : '☆';
       const starClass = isFavorite ? 'active' : 'inactive';
       
-      // 마켓 정보 가져오기
       const marketInfo = marketInfoMap[symbol] || {};
       const koreanName = marketInfo.korean_name || symbol;
       const englishName = marketInfo.english_name || '';
       
-      // 디버깅용 로그 (필요시 주석 해제)
-      // console.log(`심볼: ${symbol}, 한글명: ${koreanName}, 영문명: ${englishName}`);
+      // 디버깅용 로그 (처음 몇 개만)
+      if (Object.keys(marketInfoMap).length > 0 && Math.random() < 0.1) {
+        console.log(`심볼: ${symbol}, 한글명: ${koreanName}, 영문명: ${englishName}`);
+      }
       
       return `
         <div class="symbol-cell">
