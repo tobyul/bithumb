@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>빗썸 시세 AG Grid - 투자점수 시스템</title>
+  <title>빗썸 시세 AG Grid - 스마트 매매 시스템</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
   <style>
     body { background: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; }
     .container {
-      max-width: 1800px;
+      max-width: 2000px;
       margin: 0 auto;
       background: #fff;
       padding: 20px;
@@ -145,6 +145,25 @@
     .grade-C { background: #f8d7da; color: #721c24; }
     .grade-D { background: #f5c6cb; color: #721c24; }
     
+    /* 매매 가격 셀 스타일 */
+    .target-price {
+      color: #28a745;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    
+    .stop-loss {
+      color: #dc3545;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    
+    .no-trade {
+      color: #6c757d;
+      font-style: italic;
+      font-size: 12px;
+    }
+    
     /* 토스트 메시지 스타일 */
     .toast {
       position: fixed;
@@ -173,7 +192,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🪙 빗썸 암호화폐 실시간 시세 - 투자점수 시스템</h1>
+    <h1>🪙 빗썸 암호화폐 스마트 매매 시스템</h1>
     <div id="datetime" class="datetime-display"></div>
     
     <div class="control-panel">
@@ -235,13 +254,36 @@
       'FLOKI': '플로키', 'BONK': '봉크', 'MEME': '메메코인', 'WIF': '도그위드햇', 'POPCAT': '팝캣'
     };
 
-    // 투자점수 계산 함수들
+    // 투자점수별 매매 기준 설정
+    function getTradingParams(score) {
+      if (score >= 80) return { profitRate: 8, stopLoss: 3, tradable: true };
+      if (score >= 70) return { profitRate: 6, stopLoss: 2.5, tradable: true };
+      if (score >= 60) return { profitRate: 4, stopLoss: 2, tradable: true };
+      if (score >= 50) return { profitRate: 3, stopLoss: 2, tradable: true };
+      return { profitRate: 0, stopLoss: 0, tradable: false };
+    }
+
+    // 목표가 계산
+    function calculateTargetPrice(currentPrice, score) {
+      const params = getTradingParams(score);
+      if (!params.tradable) return null;
+      return Math.round(currentPrice * (1 + params.profitRate / 100));
+    }
+
+    // 손절가 계산
+    function calculateStopLoss(currentPrice, score) {
+      const params = getTradingParams(score);
+      if (!params.tradable) return null;
+      return Math.round(currentPrice * (1 - params.stopLoss / 100));
+    }
+
+    // 투자점수 계산 함수들 (이전과 동일)
     function calculatePricePosition(data) {
       const current = parseFloat(data.closing_price);
       const min = parseFloat(data.min_price);
       const max = parseFloat(data.max_price);
       
-      if (max === min) return 10; // 변동이 없는 경우
+      if (max === min) return 10;
       
       const position = (current - min) / (max - min);
       
@@ -465,7 +507,6 @@
       if (currentFilter === 'favorites') {
         filteredData = allCryptoData.filter(coin => favoriteCoins.includes(coin.symbol));
       } else if (currentFilter === 'recommended') {
-        // 투자점수 기준 상위 10개
         filteredData = [...allCryptoData]
           .sort((a, b) => (b.investmentScore || 0) - (a.investmentScore || 0))
           .slice(0, 10);
@@ -563,13 +604,51 @@
       `;
     };
 
+    // 목표가 셀 렌더러
+    const targetPriceCellRenderer = (params) => {
+      const currentPrice = parseFloat(params.data.closing_price);
+      const score = params.data.investmentScore || 0;
+      const targetPrice = calculateTargetPrice(currentPrice, score);
+      
+      if (!targetPrice) {
+        return '<div class="no-trade">매수 제외</div>';
+      }
+      
+      const params_trading = getTradingParams(score);
+      return `
+        <div class="target-price">
+          <div style="font-size: 14px; font-weight: bold;">${targetPrice.toLocaleString('ko-KR')}원</div>
+          <div style="font-size: 11px; color: #666;">(+${params_trading.profitRate}%)</div>
+        </div>
+      `;
+    };
+
+    // 손절가 셀 렌더러
+    const stopLossCellRenderer = (params) => {
+      const currentPrice = parseFloat(params.data.closing_price);
+      const score = params.data.investmentScore || 0;
+      const stopLoss = calculateStopLoss(currentPrice, score);
+      
+      if (!stopLoss) {
+        return '<div class="no-trade">-</div>';
+      }
+      
+      const params_trading = getTradingParams(score);
+      return `
+        <div class="stop-loss">
+          <div style="font-size: 14px; font-weight: bold;">${stopLoss.toLocaleString('ko-KR')}원</div>
+          <div style="font-size: 11px; color: #666;">(-${params_trading.stopLoss}%)</div>
+        </div>
+      `;
+    };
+
     // AG Grid 옵션
     const gridOptions = {
       columnDefs: [
         { 
           field: 'symbol', 
           headerName: '암호화폐', 
-          width: 180, 
+          width: 160, 
           pinned: 'left',
           cellRenderer: symbolCellRenderer,
           cellStyle: { padding: '10px' }
@@ -577,21 +656,35 @@
         { 
           field: 'investmentScore', 
           headerName: '투자점수', 
-          width: 100, 
+          width: 90, 
           cellRenderer: scoreCellRenderer,
           sort: 'desc'
         },
         { 
           field: 'closing_price', 
           headerName: '현재가', 
-          width: 150, 
+          width: 130, 
           valueFormatter: params => formatPrice(params.value), 
           cellStyle: { fontWeight: 'bold', color: '#007bff', textAlign: 'right', paddingRight: '10px' }
         },
         { 
+          field: 'targetPrice', 
+          headerName: '목표가', 
+          width: 130, 
+          cellRenderer: targetPriceCellRenderer,
+          cellStyle: { textAlign: 'center', padding: '5px' }
+        },
+        { 
+          field: 'stopLoss', 
+          headerName: '손절가', 
+          width: 130, 
+          cellRenderer: stopLossCellRenderer,
+          cellStyle: { textAlign: 'center', padding: '5px' }
+        },
+        { 
           field: 'fluctate_rate_24H', 
           headerName: '24H 변동률', 
-          width: 130, 
+          width: 110, 
           valueFormatter: params => formatRate(params.value),
           cellStyle: params => ({
             color: parseFloat(params.value) > 0 ? '#dc3545' : parseFloat(params.value) < 0 ? '#007bff' : '#333',
@@ -603,57 +696,57 @@
         { 
           field: 'recommendation', 
           headerName: '추천', 
-          width: 100, 
+          width: 90, 
           cellStyle: params => {
             const rec = params.value;
-            if (rec === '강력 매수') return { color: '#dc3545', fontWeight: 'bold' };
-            if (rec === '매수') return { color: '#fd7e14', fontWeight: 'bold' };
-            if (rec === '보유') return { color: '#28a745', fontWeight: 'bold' };
-            if (rec === '관망') return { color: '#6c757d' };
-            return { color: '#007bff' };
+            if (rec === '강력 매수') return { color: '#dc3545', fontWeight: 'bold', fontSize: '12px' };
+            if (rec === '매수') return { color: '#fd7e14', fontWeight: 'bold', fontSize: '12px' };
+            if (rec === '보유') return { color: '#28a745', fontWeight: 'bold', fontSize: '12px' };
+            if (rec === '관망') return { color: '#6c757d', fontSize: '12px' };
+            return { color: '#007bff', fontSize: '12px' };
           }
         },
         { 
           field: 'opening_price', 
           headerName: '시가', 
-          width: 130, 
+          width: 120, 
           valueFormatter: params => formatPrice(params.value),
-          cellStyle: { textAlign: 'right', paddingRight: '10px' }
+          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
         },
         { 
           field: 'min_price', 
           headerName: '최저가', 
-          width: 130, 
+          width: 120, 
           valueFormatter: params => formatPrice(params.value), 
-          cellStyle: { color: '#dc3545', textAlign: 'right', paddingRight: '10px' }
+          cellStyle: { color: '#dc3545', textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
         },
         { 
           field: 'max_price', 
           headerName: '최고가', 
-          width: 130, 
+          width: 120, 
           valueFormatter: params => formatPrice(params.value), 
-          cellStyle: { color: '#28a745', textAlign: 'right', paddingRight: '10px' }
+          cellStyle: { color: '#28a745', textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
         },
         { 
           field: 'units_traded', 
           headerName: '거래량', 
-          width: 120, 
+          width: 100, 
           valueFormatter: params => formatVolume(params.value),
-          cellStyle: { textAlign: 'right', paddingRight: '10px' }
+          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
         },
         { 
           field: 'acc_trade_value', 
           headerName: '거래대금', 
-          width: 150, 
+          width: 130, 
           valueFormatter: params => formatPrice(params.value),
-          cellStyle: { textAlign: 'right', paddingRight: '10px' }
+          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
         }
       ],
       defaultColDef: {
         sortable: true,
         filter: true,
         resizable: true,
-        minWidth: 100,
+        minWidth: 80,
         suppressSizeToFit: false
       },
       rowData: [],
@@ -708,11 +801,15 @@
         // 각 코인에 대해 투자점수 계산
         allCryptoData = rawData.map(coin => {
           const scoreResult = calculateInvestmentScore(coin, rawData);
+          const currentPrice = parseFloat(coin.closing_price);
+          
           return {
             ...coin,
             investmentScore: scoreResult.totalScore,
             grade: scoreResult.grade,
-            recommendation: scoreResult.recommendation
+            recommendation: scoreResult.recommendation,
+            targetPrice: calculateTargetPrice(currentPrice, scoreResult.totalScore),
+            stopLoss: calculateStopLoss(currentPrice, scoreResult.totalScore)
           };
         });
 
