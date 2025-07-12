@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>빗썸 시세 AG Grid</title>
+  <title>빗썸 시세 AG Grid - 투자점수 시스템</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css" />
   <style>
     body { background: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; }
     .container {
-      max-width: 1600px;
+      max-width: 1800px;
       margin: 0 auto;
       background: #fff;
       padding: 20px;
@@ -48,6 +48,9 @@
     .filter-btn.favorites { background: #ffc107; color: #333; }
     .filter-btn.favorites:hover { background: #e0a800; }
     .filter-btn.favorites.active { background: #fd7e14; color: #fff; }
+    .filter-btn.recommended { background: #dc3545; color: #fff; }
+    .filter-btn.recommended:hover { background: #c82333; }
+    .filter-btn.recommended.active { background: #bd2130; }
     #myGrid { height: 600px; width: 100%; }
     .loading { text-align: center; color: #666; margin: 20px 0; }
     .coin-name { font-size: 12px; color: #666; }
@@ -87,7 +90,6 @@
       background: rgba(255, 193, 7, 0.2);
     }
     
-    /* 클릭 효과 */
     .favorite-star:active {
       transform: scale(0.9);
     }
@@ -115,6 +117,33 @@
     .ag-row.favorite-row:hover {
       background-color: #fff8e1 !important;
     }
+    
+    /* 추천 코인 행 하이라이트 */
+    .ag-row.recommended-row {
+      background-color: #fff5f5 !important;
+      border-left: 3px solid #dc3545 !important;
+    }
+    .ag-row.recommended-row:hover {
+      background-color: #ffe6e6 !important;
+    }
+    
+    /* 투자점수 셀 스타일 */
+    .score-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-weight: bold;
+      border-radius: 4px;
+      margin: 2px;
+    }
+    
+    .grade-A-plus { background: #d4edda; color: #155724; }
+    .grade-A { background: #d1ecf1; color: #0c5460; }
+    .grade-B-plus { background: #fff3cd; color: #856404; }
+    .grade-B { background: #ffeaa7; color: #6c5ce7; }
+    .grade-C { background: #f8d7da; color: #721c24; }
+    .grade-D { background: #f5c6cb; color: #721c24; }
     
     /* 토스트 메시지 스타일 */
     .toast {
@@ -144,13 +173,14 @@
 </head>
 <body>
   <div class="container">
-    <h1>🪙 빗썸 암호화폐 실시간 시세</h1>
+    <h1>🪙 빗썸 암호화폐 실시간 시세 - 투자점수 시스템</h1>
     <div id="datetime" class="datetime-display"></div>
     
     <div class="control-panel">
       <button class="refresh-btn" onclick="loadCryptoData()">🔄 새로고침</button>
       <button class="filter-btn" id="allCoinsBtn" onclick="toggleFilter('all')">📊 전체 코인</button>
       <button class="filter-btn favorites" id="favoritesBtn" onclick="toggleFilter('favorites')">⭐ 관심 코인</button>
+      <button class="filter-btn recommended" id="recommendedBtn" onclick="toggleFilter('recommended')">🎯 추천 코인</button>
     </div>
     
     <div id="loading" class="loading" style="display: none;">데이터 로딩 중...</div>
@@ -182,163 +212,196 @@
       document.getElementById('datetime').textContent = `마지막 업데이트: ${dateTimeString}`;
     }
 
-    // 1초마다 시간 업데이트
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
     // 암호화폐 심볼과 한국어 이름 매핑
     const coinNames = {
-      'BTC': '비트코인',
-      'ETH': '이더리움',
-      'XRP': '리플',
-      'BCH': '비트코인캐시',
-      'LTC': '라이트코인',
-      'EOS': '이오스',
-      'ETC': '이더리움클래식',
-      'XLM': '스텔라루멘',
-      'ADA': '에이다',
-      'DOT': '폴카닷',
-      'LINK': '체인링크',
-      'TRX': '트론',
-      'VET': '비체인',
-      'THETA': '시타',
-      'BNB': '바이낸스코인',
-      'MATIC': '폴리곤',
-      'SOL': '솔라나',
-      'AVAX': '아발란체',
-      'DOGE': '도지코인',
-      'SHIB': '시바이누',
-      'UNI': '유니스왑',
-      'ATOM': '코스모스',
-      'ALGO': '알고랜드',
-      'ICP': '인터넷컴퓨터',
-      'FIL': '파일코인',
-      'AAVE': '에이브',
-      'COMP': '컴파운드',
-      'MKR': '메이커',
-      'SUSHI': '스시스왑',
-      'CRV': '커브',
-      'BAT': '베이직어텐션토큰',
-      'ZRX': '제로엑스',
-      'MANA': '디센트럴랜드',
-      'SAND': '샌드박스',
-      'ENJ': '엔진코인',
-      'CHZ': '칠리즈',
-      'FLOW': '플로우',
-      'KLAY': '클레이튼',
-      'WEMIX': '위믹스',
-      'QTUM': '퀀텀',
-      'LSK': '리스크',
-      'STEEM': '스팀',
-      'STRAX': '스트라티스',
-      'ARDR': '아더',
-      'STORJ': '스토리지',
-      'GRT': '더그래프',
-      'BAL': '밸런서',
-      'REN': '렌',
-      'KNC': '카이버네트워크',
-      'ZIL': '질리카',
-      'WAVES': '웨이브',
-      'ICX': '아이콘',
-      'OMG': '오미세고',
-      'ANKR': '앵커',
-      'CTC': '크레딧코인',
-      'SBD': '스팀달러',
-      'POLA': '폴라리스쉐어',
-      'TEMCO': '템코',
-      'HIBS': '하이브',
-      'SOLVE': '솔브케어',
-      'HBAR': '헤데라해시그래프',
-      'IOST': '아이오에스티',
-      'AERGO': '아르고',
-      'DAWN': '던프로토콜',
-      'META': '메타디움',
-      'TFUEL': '시타퓨엘',
-      'ORBS': '오브스',
-      'VALOR': '밸러토큰',
-      'CON': '코넌토큰',
-      'BORA': '보라',
-      'JST': '저스트',
-      'CRO': '크로노스',
-      'TON': '톤코인',
-      'BLUR': '블러',
-      'PEPE': '페페',
-      'APT': '앱토스',
-      'OP': '옵티미즘',
-      'ARB': '아비트럼',
-      'SUI': '수이',
-      'WLD': '월드코인',
-      'TIA': '셀레스티아',
-      'STRK': '스타크넷',
-      'PYTH': '피스네트워크',
-      'JUP': '주피터',
-      'W': '웜홀',
-      'ENA': '에나',
-      'REZ': '리질리언트',
-      'ETHFI': '이더파이',
-      'PENDLE': '펜들',
-      'RUNE': '토르체인',
-      'NEAR': '니어프로토콜',
-      'FTM': '팬텀',
-      'IMX': '이뮤터블엑스',
-      'INJ': '인젝티브',
-      'LUNC': '루나클래식',
-      'USTC': '테라USD클래식',
-      'LUNA': '루나',
-      'APE': '에이프코인',
-      'GALA': '갈라',
-      'AXS': '액시인피니티',
-      'GMT': '스테픈',
-      'STEPN': '스테픈',
-      'JASMY': '재스미',
-      'KAVA': '카바',
-      'ROSE': '오아시스',
-      'CELO': '셀로',
-      'MINA': '미나',
-      '1INCH': '원인치',
-      'AUDIO': '오디우스',
-      'CTK': '써틱',
-      'BAND': '밴드프로토콜',
-      'ALPHA': '알파파이낸스',
-      'MDX': '맨덱스',
-      'WAXP': '왁스',
-      'KARA': '카라스타',
-      'SSX': '썸씽',
-      'HUNT': '헌트',
-      'PLA': '플레이댑',
-      'LOOM': '룸네트워크',
-      'BZRX': '비지엑스',
-      'WIKEN': '위켄',
-      'OBSR': '옵저버',
-      'MILK': '밀크',
-      'BIOT': '바이오패스포트',
-      'DUBBZ': '더블즈',
-      'FLOKI': '플로키',
-      'BONK': '봉크',
-      'MEME': '메메코인',
-      'WIF': '도그위드햇',
-      'POPCAT': '팝캣',
-      'BRETT': '브렛',
-      'NEIRO': '네이로',
-      'GOAT': '고트',
-      'PNUT': '피넛',
-      'ACT': '액트',
-      'EIGEN': '아이겐',
-      'USUAL': '유주얼',
-      'MOVE': '무브',
-      'ME': '매직에덴',
-      'VIRTUAL': '버추얼',
-      'AI16Z': 'AI16Z',
-      'GRIFFAIN': '그리페인',
-      'VANA': '바나',
-      'VELODROME': '벨로드롬',
-      'HYPERLIQUID': '하이퍼리퀴드',
-      'FARTCOIN': '파트코인'
+      'BTC': '비트코인', 'ETH': '이더리움', 'XRP': '리플', 'BCH': '비트코인캐시', 'LTC': '라이트코인',
+      'EOS': '이오스', 'ETC': '이더리움클래식', 'XLM': '스텔라루멘', 'ADA': '에이다', 'DOT': '폴카닷',
+      'LINK': '체인링크', 'TRX': '트론', 'VET': '비체인', 'THETA': '시타', 'BNB': '바이낸스코인',
+      'MATIC': '폴리곤', 'SOL': '솔라나', 'AVAX': '아발란체', 'DOGE': '도지코인', 'SHIB': '시바이누',
+      'UNI': '유니스왑', 'ATOM': '코스모스', 'ALGO': '알고랜드', 'ICP': '인터넷컴퓨터', 'FIL': '파일코인',
+      'AAVE': '에이브', 'COMP': '컴파운드', 'MKR': '메이커', 'SUSHI': '스시스왑', 'CRV': '커브',
+      'BAT': '베이직어텐션토큰', 'ZRX': '제로엑스', 'MANA': '디센트럴랜드', 'SAND': '샌드박스', 'ENJ': '엔진코인',
+      'CHZ': '칠리즈', 'FLOW': '플로우', 'KLAY': '클레이튼', 'WEMIX': '위믹스', 'QTUM': '퀀텀',
+      'LSK': '리스크', 'STEEM': '스팀', 'STRAX': '스트라티스', 'ARDR': '아더', 'STORJ': '스토리지',
+      'GRT': '더그래프', 'BAL': '밸런서', 'REN': '렌', 'KNC': '카이버네트워크', 'ZIL': '질리카',
+      'WAVES': '웨이브', 'ICX': '아이콘', 'OMG': '오미세고', 'ANKR': '앵커', 'CTC': '크레딧코인',
+      'TON': '톤코인', 'BLUR': '블러', 'PEPE': '페페', 'APT': '앱토스', 'OP': '옵티미즘',
+      'ARB': '아비트럼', 'SUI': '수이', 'WLD': '월드코인', 'TIA': '셀레스티아', 'NEAR': '니어프로토콜',
+      'FTM': '팬텀', 'IMX': '이뮤터블엑스', 'INJ': '인젝티브', 'LUNC': '루나클래식', 'LUNA': '루나',
+      'APE': '에이프코인', 'GALA': '갈라', 'AXS': '액시인피니티', 'GMT': '스테픈', 'JASMY': '재스미',
+      'FLOKI': '플로키', 'BONK': '봉크', 'MEME': '메메코인', 'WIF': '도그위드햇', 'POPCAT': '팝캣'
     };
+
+    // 투자점수 계산 함수들
+    function calculatePricePosition(data) {
+      const current = parseFloat(data.closing_price);
+      const min = parseFloat(data.min_price);
+      const max = parseFloat(data.max_price);
+      
+      if (max === min) return 10; // 변동이 없는 경우
+      
+      const position = (current - min) / (max - min);
+      
+      if (position >= 0.3 && position <= 0.7) return 15;
+      if (position >= 0.2 && position <= 0.8) return 10;
+      if (position >= 0.1 && position <= 0.9) return 5;
+      return 0;
+    }
+
+    function calculateVolatility(data) {
+      const min = parseFloat(data.min_price);
+      const max = parseFloat(data.max_price);
+      const opening = parseFloat(data.opening_price);
+      
+      if (opening === 0) return 0;
+      
+      const volatility = ((max - min) / opening) * 100;
+      
+      if (volatility >= 2 && volatility <= 8) return 10;
+      if (volatility >= 1 && volatility <= 12) return 7;
+      if (volatility >= 0.5 && volatility <= 15) return 4;
+      return 0;
+    }
+
+    function calculateMomentum(data) {
+      const rate24h = parseFloat(data.fluctate_rate_24H);
+      const current = parseFloat(data.closing_price);
+      const opening = parseFloat(data.opening_price);
+      
+      if (opening === 0) return 0;
+      
+      const dailyChange = ((current - opening) / opening) * 100;
+      
+      if (rate24h > 0 && rate24h <= 5 && dailyChange > 0) return 15;
+      if (rate24h > 0 && rate24h <= 10) return 10;
+      if (rate24h > -2 && rate24h <= 1) return 7;
+      if (rate24h > -5 && rate24h <= -2) return 3;
+      return 0;
+    }
+
+    function calculateVolumeHealth(data) {
+      const volume = parseFloat(data.units_traded);
+      const value = parseFloat(data.acc_trade_value);
+      
+      if (volume === 0 || value === 0) return 0;
+      
+      const avgPrice = value / volume;
+      const currentPrice = parseFloat(data.closing_price);
+      
+      if (currentPrice === 0) return 0;
+      
+      const priceDeviation = Math.abs(currentPrice - avgPrice) / currentPrice;
+      
+      if (priceDeviation <= 0.01) return 15;
+      if (priceDeviation <= 0.03) return 10;
+      if (priceDeviation <= 0.05) return 5;
+      return 0;
+    }
+
+    function calculateVolumeGrowth(data) {
+      const volume = parseFloat(data.units_traded);
+      const volume24h = parseFloat(data.units_traded_24H);
+      
+      if (volume === 0) return 0;
+      
+      if (volume24h > volume * 1.2) return 10;
+      if (volume24h > volume * 1.1) return 7;
+      if (volume24h > volume * 1.05) return 4;
+      return 0;
+    }
+
+    function calculateStability(data) {
+      const current = parseFloat(data.closing_price);
+      const prev = parseFloat(data.prev_closing_price);
+      
+      if (prev === 0) return 0;
+      
+      const change = Math.abs((current - prev) / prev) * 100;
+      
+      if (change <= 3) return 10;
+      if (change <= 7) return 6;
+      if (change <= 15) return 2;
+      return 0;
+    }
+
+    function calculateSupportLevel(data) {
+      const current = parseFloat(data.closing_price);
+      const min = parseFloat(data.min_price);
+      const max = parseFloat(data.max_price);
+      
+      if (max === min) return 5;
+      
+      const distanceFromMin = (current - min) / (max - min);
+      
+      if (distanceFromMin >= 0.1 && distanceFromMin <= 0.3) return 10;
+      if (distanceFromMin >= 0.05 && distanceFromMin <= 0.4) return 7;
+      if (distanceFromMin >= 0.4 && distanceFromMin <= 0.6) return 4;
+      return 0;
+    }
+
+    function calculateMarketPosition(allCoins, currentCoin) {
+      const values = allCoins.map(coin => parseFloat(coin.acc_trade_value));
+      values.sort((a, b) => b - a);
+      
+      const currentValue = parseFloat(currentCoin.acc_trade_value);
+      const rank = values.indexOf(currentValue) + 1;
+      const percentile = (values.length - rank) / values.length;
+      
+      if (percentile >= 0.9) return 15;
+      if (percentile >= 0.7) return 12;
+      if (percentile >= 0.5) return 8;
+      if (percentile >= 0.3) return 4;
+      return 0;
+    }
+
+    function calculateInvestmentScore(coinData, allCoinsData) {
+      const pricePosition = calculatePricePosition(coinData);
+      const volatility = calculateVolatility(coinData);
+      const momentum = calculateMomentum(coinData);
+      const volumeHealth = calculateVolumeHealth(coinData);
+      const volumeGrowth = calculateVolumeGrowth(coinData);
+      const stability = calculateStability(coinData);
+      const supportLevel = calculateSupportLevel(coinData);
+      const marketPosition = calculateMarketPosition(allCoinsData, coinData);
+      
+      const totalScore = pricePosition + volatility + momentum + volumeHealth + 
+                        volumeGrowth + stability + supportLevel + marketPosition;
+      
+      return {
+        totalScore,
+        grade: getGrade(totalScore),
+        recommendation: getRecommendation(totalScore),
+        breakdown: {
+          technical: pricePosition + volatility + momentum,
+          volume: volumeHealth + volumeGrowth,
+          risk: stability + supportLevel,
+          market: marketPosition
+        }
+      };
+    }
+
+    function getGrade(score) {
+      if (score >= 80) return 'A+';
+      if (score >= 70) return 'A';
+      if (score >= 60) return 'B+';
+      if (score >= 50) return 'B';
+      if (score >= 40) return 'C';
+      return 'D';
+    }
+
+    function getRecommendation(score) {
+      if (score >= 75) return '강력 매수';
+      if (score >= 65) return '매수';
+      if (score >= 55) return '보유';
+      if (score >= 45) return '관망';
+      return '매도 고려';
+    }
 
     // 토스트 메시지 함수
     function showToast(message) {
-      // 기존 토스트 제거
       const existingToast = document.querySelector('.toast');
       if (existingToast) {
         existingToast.remove();
@@ -349,13 +412,12 @@
       toast.textContent = message;
       document.body.appendChild(toast);
       
-      // 3초 후 자동 제거
       setTimeout(() => {
         toast.remove();
       }, 3000);
     }
 
-    // 개선된 관심 코인 토글 함수
+    // 관심 코인 토글 함수
     function toggleFavorite(symbol) {
       const index = favoriteCoins.indexOf(symbol);
       const wasRemoved = index > -1;
@@ -367,21 +429,17 @@
       }
       localStorage.setItem('favoriteCoins', JSON.stringify(favoriteCoins));
       
-      // 즉시 그리드 업데이트 (성능 최적화)
       gridApi.refreshCells({
         force: true,
         columns: ['symbol']
       });
       
-      // 행 스타일도 즉시 업데이트
       gridApi.redrawRows();
       
-      // 현재 관심 코인 필터가 활성화되어 있다면 그리드 데이터 업데이트
       if (currentFilter === 'favorites') {
         applyFilter();
       }
       
-      // 시각적 피드백
       const coinName = getCoinName(symbol);
       const message = wasRemoved 
         ? `${coinName}(${symbol})이 관심 코인에서 제거되었습니다.`
@@ -393,9 +451,9 @@
     function toggleFilter(filterType) {
       currentFilter = filterType;
       
-      // 버튼 상태 업데이트
       document.getElementById('allCoinsBtn').classList.toggle('active', filterType === 'all');
       document.getElementById('favoritesBtn').classList.toggle('active', filterType === 'favorites');
+      document.getElementById('recommendedBtn').classList.toggle('active', filterType === 'recommended');
       
       applyFilter();
     }
@@ -406,12 +464,16 @@
       
       if (currentFilter === 'favorites') {
         filteredData = allCryptoData.filter(coin => favoriteCoins.includes(coin.symbol));
+      } else if (currentFilter === 'recommended') {
+        // 투자점수 기준 상위 10개
+        filteredData = [...allCryptoData]
+          .sort((a, b) => (b.investmentScore || 0) - (a.investmentScore || 0))
+          .slice(0, 10);
       }
       
       gridApi.setGridOption('rowData', filteredData);
       updateCoinCount(filteredData.length);
       
-      // 컬럼 크기 재조정
       setTimeout(() => {
         gridApi.sizeColumnsToFit();
       }, 100);
@@ -421,12 +483,15 @@
     function updateCoinCount(count) {
       const totalCount = allCryptoData.length;
       const favoriteCount = favoriteCoins.length;
+      const recommendedCount = 10;
       
       let countText = '';
       if (currentFilter === 'all') {
         countText = `전체 ${totalCount}개 코인 (관심 코인 ${favoriteCount}개)`;
-      } else {
+      } else if (currentFilter === 'favorites') {
         countText = `관심 코인 ${count}개 / 전체 ${totalCount}개`;
+      } else if (currentFilter === 'recommended') {
+        countText = `추천 코인 ${count}개 (투자점수 상위 ${recommendedCount}개)`;
       }
       
       document.getElementById('coinCount').textContent = countText;
@@ -457,7 +522,7 @@
       return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
     };
 
-    // 개선된 관심 코인 별표와 심볼/코인명을 함께 표시하는 렌더러
+    // 심볼 셀 렌더러
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const coinName = getCoinName(symbol);
@@ -482,6 +547,22 @@
       `;
     };
 
+    // 투자점수 셀 렌더러
+    const scoreCellRenderer = (params) => {
+      const score = params.value || 0;
+      const grade = params.data.grade || 'D';
+      const gradeClass = `grade-${grade.replace('+', '-plus')}`;
+      
+      return `
+        <div class="score-cell ${gradeClass}">
+          <div style="text-align: center;">
+            <div style="font-size: 16px;">${score}</div>
+            <div style="font-size: 12px;">${grade}</div>
+          </div>
+        </div>
+      `;
+    };
+
     // AG Grid 옵션
     const gridOptions = {
       columnDefs: [
@@ -492,6 +573,13 @@
           pinned: 'left',
           cellRenderer: symbolCellRenderer,
           cellStyle: { padding: '10px' }
+        },
+        { 
+          field: 'investmentScore', 
+          headerName: '투자점수', 
+          width: 100, 
+          cellRenderer: scoreCellRenderer,
+          sort: 'desc'
         },
         { 
           field: 'closing_price', 
@@ -513,23 +601,36 @@
           })
         },
         { 
+          field: 'recommendation', 
+          headerName: '추천', 
+          width: 100, 
+          cellStyle: params => {
+            const rec = params.value;
+            if (rec === '강력 매수') return { color: '#dc3545', fontWeight: 'bold' };
+            if (rec === '매수') return { color: '#fd7e14', fontWeight: 'bold' };
+            if (rec === '보유') return { color: '#28a745', fontWeight: 'bold' };
+            if (rec === '관망') return { color: '#6c757d' };
+            return { color: '#007bff' };
+          }
+        },
+        { 
           field: 'opening_price', 
           headerName: '시가', 
-          width: 150, 
+          width: 130, 
           valueFormatter: params => formatPrice(params.value),
           cellStyle: { textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'min_price', 
           headerName: '최저가', 
-          width: 150, 
+          width: 130, 
           valueFormatter: params => formatPrice(params.value), 
           cellStyle: { color: '#dc3545', textAlign: 'right', paddingRight: '10px' }
         },
         { 
           field: 'max_price', 
           headerName: '최고가', 
-          width: 150, 
+          width: 130, 
           valueFormatter: params => formatPrice(params.value), 
           cellStyle: { color: '#28a745', textAlign: 'right', paddingRight: '10px' }
         },
@@ -543,7 +644,7 @@
         { 
           field: 'acc_trade_value', 
           headerName: '거래대금', 
-          width: 170, 
+          width: 150, 
           valueFormatter: params => formatPrice(params.value),
           cellStyle: { textAlign: 'right', paddingRight: '10px' }
         }
@@ -557,9 +658,15 @@
       },
       rowData: [],
       rowHeight: 60,
-      // 관심 코인 행에 특별한 스타일 적용
       getRowClass: (params) => {
-        return favoriteCoins.includes(params.data.symbol) ? 'favorite-row' : '';
+        const classes = [];
+        if (favoriteCoins.includes(params.data.symbol)) {
+          classes.push('favorite-row');
+        }
+        if (currentFilter === 'recommended') {
+          classes.push('recommended-row');
+        }
+        return classes.join(' ');
       },
       onGridReady: function(params) {
         gridApi = params.api;
@@ -571,7 +678,7 @@
       }
     };
 
-    // 개선된 데이터 로드 함수 (샘플 데이터 제거)
+    // 데이터 로드 함수
     async function loadCryptoData() {
       const loadingDiv = document.getElementById('loading');
       loadingDiv.style.display = 'block';
@@ -589,17 +696,29 @@
           throw new Error('API 응답 오류: ' + data.message);
         }
 
-        // 데이터 변환 및 저장
-        allCryptoData = Object.keys(data.data)
+        // 데이터 변환 및 투자점수 계산
+        const rawData = Object.keys(data.data)
           .filter(symbol => symbol !== 'date')
           .map(symbol => ({
             symbol,
             coinName: getCoinName(symbol),
             ...data.data[symbol]
-          }))
-          .sort((a, b) => parseFloat(b.closing_price) - parseFloat(a.closing_price));
+          }));
 
-        // 필터 적용
+        // 각 코인에 대해 투자점수 계산
+        allCryptoData = rawData.map(coin => {
+          const scoreResult = calculateInvestmentScore(coin, rawData);
+          return {
+            ...coin,
+            investmentScore: scoreResult.totalScore,
+            grade: scoreResult.grade,
+            recommendation: scoreResult.recommendation
+          };
+        });
+
+        // 투자점수 기준으로 정렬
+        allCryptoData.sort((a, b) => (b.investmentScore || 0) - (a.investmentScore || 0));
+
         applyFilter();
         
         console.log(`${allCryptoData.length}개의 암호화폐 데이터가 로드되었습니다.`);
@@ -607,14 +726,9 @@
 
       } catch (error) {
         console.error('데이터 로드 오류:', error);
-        
-        // 에러 메시지 표시
         showToast('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
-        
-        // 빈 배열로 초기화
         allCryptoData = [];
         applyFilter();
-        
       } finally {
         loadingDiv.style.display = 'none';
       }
@@ -625,7 +739,6 @@
       const gridDiv = document.getElementById('myGrid');
       agGrid.createGrid(gridDiv, gridOptions);
       
-      // 초기 필터 상태 설정
       document.getElementById('allCoinsBtn').classList.add('active');
     });
   </script>
