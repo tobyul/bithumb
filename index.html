@@ -875,8 +875,8 @@
       const params_trading = getTradingParams(score);
       return `
         <div class="target-price">
-          <div style="font-size: 14px; font-weight: bold;">${targetPrice.toLocaleString('ko-KR')}원</div>
-          <div style="font-size: 11px; color: #666;">(+${params_trading.profitRate}%)</div>
+          <div style="font-size: 14px; font-weight: bold; margin: 0; line-height: 1.2;">${targetPrice.toLocaleString('ko-KR')}원</div>
+          <div style="font-size: 11px; color: #666; margin: 0; line-height: 1.2;">(+${params_trading.profitRate}%)</div>
         </div>
       `;
     };
@@ -891,8 +891,8 @@
       const params_trading = getTradingParams(score);
       return `
         <div class="stop-loss">
-          <div style="font-size: 14px; font-weight: bold;">${stopLoss.toLocaleString('ko-KR')}원</div>
-          <div style="font-size: 11px; color: #666;">(-${params_trading.stopLoss}%)</div>
+          <div style="font-size: 14px; font-weight: bold; margin: 0; line-height: 1.2;">${stopLoss.toLocaleString('ko-KR')}원</div>
+          <div style="font-size: 11px; color: #666; margin: 0; line-height: 1.2;">(-${params_trading.stopLoss}%)</div>
         </div>
       `;
     };
