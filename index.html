@@ -75,6 +75,15 @@
         { field: 'min_price', headerName: '최저가', width: 110, valueFormatter: params => formatPrice(params.value), cellStyle: {color:'#dc3545'} },
         { field: 'max_price', headerName: '최고가', width: 110, valueFormatter: params => formatPrice(params.value), cellStyle: {color:'#28a745'} },
         { field: 'units_traded', headerName: '거래량', width: 130, valueFormatter: params => formatVolume(params.value) },
+        { field: 'acc_trade_value', headerName: '거래대금', width: 130, valueFormatter: params => formatPrice(params.value) },
+        { field: 'prev_closing_price', headerName: '전일종가', width: 110, valueFormatter: params => formatPrice(params.value) },
+        { field: 'fluctate_24H', headerName: '24H 변동가', width: 110, valueFormatter: params => formatPrice(params.value),
+          cellStyle: params => {
+            if (parseFloat(params.value) > 0) return {color:'#dc3545'};
+            if (parseFloat(params.value) < 0) return {color:'#007bff'};
+            return {color:'#333'};
+          }
+        },
         { field: 'fluctate_rate_24H', headerName: '24H 변동률', width: 110, valueFormatter: params => formatRate(params.value),
           cellStyle: params => {
             if (parseFloat(params.value) > 0) return {color:'#dc3545', fontWeight:'bold'};
@@ -117,11 +126,13 @@
         const data = await response.json();
         if (data.status !== '0000') throw new Error('API 응답 오류: ' + data.message);
 
+        console.log('API 응답 데이터:', data); // 디버깅용
 
         const cryptoData = [];
-        Object.keys(data).forEach(symbol => {
+        // 중요: data.data로 접근해야 함 (data가 아닌)
+        Object.keys(data.data).forEach(symbol => {
           if (symbol !== 'date') {
-            const coinData = data[symbol];
+            const coinData = data.data[symbol];
             cryptoData.push({
               symbol: symbol,
               opening_price: coinData.opening_price,
@@ -129,26 +140,87 @@
               min_price: coinData.min_price,
               max_price: coinData.max_price,
               units_traded: coinData.units_traded,
+              acc_trade_value: coinData.acc_trade_value,
+              prev_closing_price: coinData.prev_closing_price,
+              fluctate_24H: coinData.fluctate_24H,
               fluctate_rate_24H: coinData.fluctate_rate_24H
             });
           }
         });
 
+        // 현재가 기준으로 내림차순 정렬
+        cryptoData.sort((a, b) => parseFloat(b.closing_price) - parseFloat(a.closing_price));
+
         console.log('변환된 데이터:', cryptoData);
+        console.log('데이터 개수:', cryptoData.length);
 
         // gridApi가 존재하는지 확인 후 데이터 설정
-        if (gridApi) {
+        if (gridApi && typeof gridApi.setRowData === 'function') {
           gridApi.setRowData(cryptoData);
           console.log('데이터가 그리드에 설정되었습니다.');
         } else {
-          console.error('gridApi가 아직 초기화되지 않았습니다.');
+          console.error('gridApi.setRowData 함수를 사용할 수 없습니다.');
+          console.log('gridApi 객체:', gridApi);
         }
 
       } catch (error) {
         console.error('데이터 로드 중 오류 발생:', error);
         alert('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        
+        // CORS 오류인 경우 샘플 데이터로 테스트
+        if (error.message.includes('CORS') || error.message.includes('fetch')) {
+          console.log('CORS 오류로 인해 샘플 데이터를 사용합니다.');
+          loadSampleData();
+        }
       } finally {
         loadingDiv.style.display = 'none';
+      }
+    }
+
+    // 샘플 데이터 로드 함수 (CORS 오류 시 사용)
+    function loadSampleData() {
+      const sampleData = [
+        {
+          symbol: 'BTC',
+          opening_price: '158770000',
+          closing_price: '159708000',
+          min_price: '156800000',
+          max_price: '159939000',
+          units_traded: '645.38767361',
+          acc_trade_value: '103071234567',
+          prev_closing_price: '158850000',
+          fluctate_24H: '858000',
+          fluctate_rate_24H: '0.54'
+        },
+        {
+          symbol: 'ETH',
+          opening_price: '4027000',
+          closing_price: '4027000',
+          min_price: '3900000',
+          max_price: '4041000',
+          units_traded: '17875.525049',
+          acc_trade_value: '71982345678',
+          prev_closing_price: '4061000',
+          fluctate_24H: '-34000',
+          fluctate_rate_24H: '-0.84'
+        },
+        {
+          symbol: 'XRP',
+          opening_price: '730',
+          closing_price: '735',
+          min_price: '720',
+          max_price: '740',
+          units_traded: '125674.123456',
+          acc_trade_value: '92345678',
+          prev_closing_price: '728',
+          fluctate_24H: '7',
+          fluctate_rate_24H: '0.96'
+        }
+      ];
+
+      if (gridApi && typeof gridApi.setRowData === 'function') {
+        gridApi.setRowData(sampleData);
+        console.log('샘플 데이터가 그리드에 설정되었습니다.');
       }
     }
 
