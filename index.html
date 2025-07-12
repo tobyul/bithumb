@@ -51,6 +51,8 @@
     #myGrid { height: 600px; width: 100%; }
     .loading { text-align: center; color: #666; margin: 20px 0; }
     .coin-name { font-size: 12px; color: #666; }
+    
+    /* 개선된 별표 스타일 */
     .favorite-star {
       cursor: pointer;
       font-size: 20px;
@@ -58,21 +60,38 @@
       transition: all 0.2s ease;
       user-select: none;
       display: inline-block;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      text-align: center;
+      line-height: 24px;
     }
+    
     .favorite-star.inactive {
       color: #ddd;
       text-shadow: 0 0 1px #999;
+      background: transparent;
     }
+    
     .favorite-star.active {
       color: #ffc107;
       text-shadow: 0 0 3px rgba(255, 193, 7, 0.5);
+      background: rgba(255, 193, 7, 0.1);
       transform: scale(1.1);
     }
+    
     .favorite-star:hover {
       color: #ffc107;
       text-shadow: 0 0 3px rgba(255, 193, 7, 0.8);
       transform: scale(1.2);
+      background: rgba(255, 193, 7, 0.2);
     }
+    
+    /* 클릭 효과 */
+    .favorite-star:active {
+      transform: scale(0.9);
+    }
+    
     .symbol-cell {
       display: flex;
       align-items: center;
@@ -87,6 +106,7 @@
       font-size: 12px;
       margin-top: 10px;
     }
+    
     /* 관심 코인 행 하이라이트 */
     .ag-row.favorite-row {
       background-color: #fffbf0 !important;
@@ -94,6 +114,31 @@
     }
     .ag-row.favorite-row:hover {
       background-color: #fff8e1 !important;
+    }
+    
+    /* 토스트 메시지 스타일 */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
   </style>
 </head>
@@ -291,23 +336,57 @@
       'FARTCOIN': '파트코인'
     };
 
-    // 관심 코인 토글 함수
+    // 토스트 메시지 함수
+    function showToast(message) {
+      // 기존 토스트 제거
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      // 3초 후 자동 제거
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // 개선된 관심 코인 토글 함수
     function toggleFavorite(symbol) {
       const index = favoriteCoins.indexOf(symbol);
-      if (index > -1) {
+      const wasRemoved = index > -1;
+      
+      if (wasRemoved) {
         favoriteCoins.splice(index, 1);
       } else {
         favoriteCoins.push(symbol);
       }
       localStorage.setItem('favoriteCoins', JSON.stringify(favoriteCoins));
       
-      // 그리드 새로고침 (별표 색상 업데이트)
-      gridApi.refreshCells();
+      // 즉시 그리드 업데이트 (성능 최적화)
+      gridApi.refreshCells({
+        force: true,
+        columns: ['symbol']
+      });
+      
+      // 행 스타일도 즉시 업데이트
+      gridApi.redrawRows();
       
       // 현재 관심 코인 필터가 활성화되어 있다면 그리드 데이터 업데이트
       if (currentFilter === 'favorites') {
         applyFilter();
       }
+      
+      // 시각적 피드백
+      const coinName = getCoinName(symbol);
+      const message = wasRemoved 
+        ? `${coinName}(${symbol})이 관심 코인에서 제거되었습니다.`
+        : `${coinName}(${symbol})이 관심 코인에 추가되었습니다.`;
+      showToast(message);
     }
 
     // 필터 토글 함수
@@ -378,19 +457,23 @@
       return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
     };
 
-    // 관심 코인 별표와 심볼/코인명을 함께 표시하는 렌더러
+    // 개선된 관심 코인 별표와 심볼/코인명을 함께 표시하는 렌더러
     const symbolCellRenderer = (params) => {
       const symbol = params.value;
       const coinName = getCoinName(symbol);
       const isFavorite = favoriteCoins.includes(symbol);
       
-      // 별표 아이콘 선택: 관심 코인은 채워진 별, 아니면 빈 별
       const starIcon = isFavorite ? '★' : '☆';
       const starClass = isFavorite ? 'active' : 'inactive';
       
       return `
         <div class="symbol-cell">
-          <span class="favorite-star ${starClass}" onclick="toggleFavorite('${symbol}')">${starIcon}</span>
+          <span class="favorite-star ${starClass}" 
+                onclick="toggleFavorite('${symbol}')"
+                title="${isFavorite ? '관심 코인에서 제거' : '관심 코인에 추가'}"
+                data-symbol="${symbol}">
+            ${starIcon}
+          </span>
           <div class="symbol-info">
             <div style="font-weight: bold; font-size: 14px;">${symbol}</div>
             <div class="coin-name">${coinName}</div>
@@ -488,7 +571,7 @@
       }
     };
 
-    // 데이터 로드 함수
+    // 개선된 데이터 로드 함수 (샘플 데이터 제거)
     async function loadCryptoData() {
       const loadingDiv = document.getElementById('loading');
       loadingDiv.style.display = 'block';
@@ -525,67 +608,13 @@
       } catch (error) {
         console.error('데이터 로드 오류:', error);
         
-        // CORS 오류 시 샘플 데이터 사용
-        allCryptoData = [
-          {
-            symbol: 'BTC',
-            coinName: '비트코인',
-            opening_price: '158770000',
-            closing_price: '159708000',
-            min_price: '156800000',
-            max_price: '159939000',
-            units_traded: '645.38767361',
-            acc_trade_value: '103071234567',
-            fluctate_rate_24H: '0.54'
-          },
-          {
-            symbol: 'ETH',
-            coinName: '이더리움',
-            opening_price: '4027000',
-            closing_price: '4027000',
-            min_price: '3900000',
-            max_price: '4041000',
-            units_traded: '17875.525049',
-            acc_trade_value: '71982345678',
-            fluctate_rate_24H: '-0.84'
-          },
-          {
-            symbol: 'XRP',
-            coinName: '리플',
-            opening_price: '730',
-            closing_price: '735',
-            min_price: '720',
-            max_price: '740',
-            units_traded: '125674.123456',
-            acc_trade_value: '92345678',
-            fluctate_rate_24H: '0.96'
-          },
-          {
-            symbol: 'ADA',
-            coinName: '에이다',
-            opening_price: '450',
-            closing_price: '455',
-            min_price: '445',
-            max_price: '460',
-            units_traded: '89234.567890',
-            acc_trade_value: '40567890',
-            fluctate_rate_24H: '1.56'
-          },
-          {
-            symbol: 'DOT',
-            columnName: '폴카닷',
-            opening_price: '8500',
-            closing_price: '8450',
-            min_price: '8400',
-            max_price: '8550',
-            units_traded: '12345.678901',
-            acc_trade_value: '104567890',
-            fluctate_rate_24H: '-0.82'
-          }
-        ];
+        // 에러 메시지 표시
+        showToast('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
         
+        // 빈 배열로 초기화
+        allCryptoData = [];
         applyFilter();
-        console.log('샘플 데이터를 사용합니다.');
+        
       } finally {
         loadingDiv.style.display = 'none';
       }
