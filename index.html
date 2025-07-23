@@ -1271,14 +1271,17 @@
           headerName: '거래량', 
           width: 100, 
           valueFormatter: params => formatVolume(params.value),
-          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
+          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' },
+          hide: true
+
         },
         { 
           field: 'acc_trade_value', 
           headerName: '거래대금', 
           width: 130, 
           valueFormatter: params => formatPrice(params.value),
-          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' }
+          cellStyle: { textAlign: 'right', paddingRight: '10px', fontSize: '12px' },
+          hide: true
         }
       ],
       defaultColDef: {
