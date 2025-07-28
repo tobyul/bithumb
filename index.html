@@ -1144,13 +1144,13 @@
       return `
         <div class="target-price">
           <div style="font-size: 13px; font-weight: bold; margin: 0; line-height: 1.2; color: #28a745;">
-            주요: ${originalTargetPrice.toLocaleString('ko-KR')}원 (+${tradingParams.profitRate}%)
+            ${originalTargetPrice.toLocaleString('ko-KR')}원 (+${tradingParams.profitRate}%)
           </div>
           <div style="font-size: 11px; color: #17a2b8; margin: 0; line-height: 1.2;">
-            +3%: ${target3.toLocaleString('ko-KR')}원
+            ${target3.toLocaleString('ko-KR')}원 (+3%)
           </div>
           <div style="font-size: 11px; color: #fd7e14; margin: 0; line-height: 1.2;">
-            +5%: ${target5.toLocaleString('ko-KR')}원
+            ${target5.toLocaleString('ko-KR')}원 (+5%)
           </div>
         </div>
       `;
@@ -1164,7 +1164,6 @@
       // 추가 손절가 계산
       const stop1 = Math.round(currentPrice * 0.99);  // -1%
       const stop2 = Math.round(currentPrice * 0.98);  // -2%
-      const stop3 = Math.round(currentPrice * 0.97);  // -3%
       
       if (!originalStopLoss) {
         return '<div class="no-trade">-</div>';
@@ -1175,16 +1174,13 @@
       return `
         <div class="stop-loss">
           <div style="font-size: 13px; font-weight: bold; margin: 0; line-height: 1.2; color: #dc3545;">
-            주요: ${originalStopLoss.toLocaleString('ko-KR')}원 (-${tradingParams.stopLoss}%)
+            ${originalStopLoss.toLocaleString('ko-KR')}원 (-${tradingParams.stopLoss}%)
           </div>
           <div style="font-size: 11px; color: #ffc107; margin: 0; line-height: 1.2;">
-            -1%: ${stop1.toLocaleString('ko-KR')}원
+            ${stop1.toLocaleString('ko-KR')}원 (-1%)
           </div>
           <div style="font-size: 11px; color: #fd7e14; margin: 0; line-height: 1.2;">
-            -2%: ${stop2.toLocaleString('ko-KR')}원
-          </div>
-          <div style="font-size: 11px; color: #dc3545; margin: 0; line-height: 1.2;">
-            -3%: ${stop3.toLocaleString('ko-KR')}원
+            ${stop2.toLocaleString('ko-KR')}원 (-2%)
           </div>
         </div>
       `;
