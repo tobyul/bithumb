@@ -1129,15 +1129,29 @@
     const targetPriceCellRenderer = (params) => {
       const currentPrice = parseFloat(params.data.closing_price);
       const score = params.data.investmentScore || 0;
-      const targetPrice = calculateTargetPrice(currentPrice, score);
-      if (!targetPrice) {
+      const originalTargetPrice = calculateTargetPrice(currentPrice, score);
+      
+      // 추가 목표가 계산
+      const target3 = Math.round(currentPrice * 1.03);
+      const target5 = Math.round(currentPrice * 1.05);
+      
+      if (!originalTargetPrice) {
         return '<div class="no-trade">매수 제외</div>';
       }
-      const params_trading = getTradingParams(score);
+      
+      const tradingParams = getTradingParams(score);
+      
       return `
         <div class="target-price">
-          <div style="font-size: 14px; font-weight: bold; margin: 0; line-height: 1.2;">${targetPrice.toLocaleString('ko-KR')}원</div>
-          <div style="font-size: 11px; color: #666; margin: 0; line-height: 1.2;">(+${params_trading.profitRate}%)</div>
+          <div style="font-size: 13px; font-weight: bold; margin: 0; line-height: 1.2; color: #28a745;">
+            주요: ${originalTargetPrice.toLocaleString('ko-KR')}원 (+${tradingParams.profitRate}%)
+          </div>
+          <div style="font-size: 11px; color: #17a2b8; margin: 0; line-height: 1.2;">
+            +3%: ${target3.toLocaleString('ko-KR')}원
+          </div>
+          <div style="font-size: 11px; color: #fd7e14; margin: 0; line-height: 1.2;">
+            +5%: ${target5.toLocaleString('ko-KR')}원
+          </div>
         </div>
       `;
     };
@@ -1145,18 +1159,37 @@
     const stopLossCellRenderer = (params) => {
       const currentPrice = parseFloat(params.data.closing_price);
       const score = params.data.investmentScore || 0;
-      const stopLoss = calculateStopLoss(currentPrice, score);
-      if (!stopLoss) {
+      const originalStopLoss = calculateStopLoss(currentPrice, score);
+      
+      // 추가 손절가 계산
+      const stop1 = Math.round(currentPrice * 0.99);  // -1%
+      const stop2 = Math.round(currentPrice * 0.98);  // -2%
+      const stop3 = Math.round(currentPrice * 0.97);  // -3%
+      
+      if (!originalStopLoss) {
         return '<div class="no-trade">-</div>';
       }
-      const params_trading = getTradingParams(score);
+      
+      const tradingParams = getTradingParams(score);
+      
       return `
         <div class="stop-loss">
-          <div style="font-size: 14px; font-weight: bold; margin: 0; line-height: 1.2;">${stopLoss.toLocaleString('ko-KR')}원</div>
-          <div style="font-size: 11px; color: #666; margin: 0; line-height: 1.2;">(-${params_trading.stopLoss}%)</div>
+          <div style="font-size: 13px; font-weight: bold; margin: 0; line-height: 1.2; color: #dc3545;">
+            주요: ${originalStopLoss.toLocaleString('ko-KR')}원 (-${tradingParams.stopLoss}%)
+          </div>
+          <div style="font-size: 11px; color: #ffc107; margin: 0; line-height: 1.2;">
+            -1%: ${stop1.toLocaleString('ko-KR')}원
+          </div>
+          <div style="font-size: 11px; color: #fd7e14; margin: 0; line-height: 1.2;">
+            -2%: ${stop2.toLocaleString('ko-KR')}원
+          </div>
+          <div style="font-size: 11px; color: #dc3545; margin: 0; line-height: 1.2;">
+            -3%: ${stop3.toLocaleString('ko-KR')}원
+          </div>
         </div>
       `;
     };
+
 
     const gridOptions = {
       columnDefs: [
@@ -1206,14 +1239,14 @@
         { 
           field: 'targetPrice', 
           headerName: '목표가', 
-          width: 130, 
+          width: 180,  // 130에서 180으로 증가
           cellRenderer: targetPriceCellRenderer,
           cellStyle: { textAlign: 'center', padding: '5px' }
         },
         { 
           field: 'stopLoss', 
           headerName: '손절가', 
-          width: 130, 
+          width: 180,  // 130에서 180으로 증가
           cellRenderer: stopLossCellRenderer,
           cellStyle: { textAlign: 'center', padding: '5px' }
         },
@@ -1275,7 +1308,7 @@
         suppressSizeToFit: false
       },
       rowData: [],
-      rowHeight: 60,
+      rowHeight: 80,
       getRowClass: (params) => {
         const classes = [];
         if (favoriteCoins.includes(params.data.symbol)) {
